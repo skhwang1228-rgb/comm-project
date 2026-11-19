@@ -50,7 +50,9 @@ export default function SlideViewer({ url, page, onLoaded }: Props) {
         onLoaded(doc.numPages);
         setDocVersion((v) => v + 1);
       } catch (e) {
-        if (!cancelled) setError("슬라이드를 불러오지 못했습니다.");
+        console.error("PDF load failed", e);
+        const err = e as { name?: string; message?: string };
+        if (!cancelled) setError(`슬라이드를 불러오지 못했습니다. (${err?.name ?? "오류"}: ${err?.message ?? ""})`);
       } finally {
         if (!cancelled) setLoading(false);
       }

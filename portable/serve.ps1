@@ -22,7 +22,19 @@ $listener.Prefixes.Add("http://localhost:$Port/")
 try {
   $listener.Start()
 } catch {
-  Write-Host "포트 $Port 를 사용할 수 없습니다. 이미 실행 중인 창이 있는지 확인하세요." -ForegroundColor Red
+  # 이미 이 앱이 실행 중이면(이전에 띄운 검은 창) 새로 켜지 않고 그 화면만 다시 연다
+  $alive = $false
+  try {
+    $r = Invoke-WebRequest -Uri "http://localhost:$Port/admin" -UseBasicParsing -TimeoutSec 3
+    $alive = ($r.StatusCode -eq 200)
+  } catch {}
+  if ($alive) {
+    Write-Host '이미 실행 중입니다. 기존 화면을 다시 엽니다.' -ForegroundColor Green
+    Start-Process "http://localhost:$Port/admin"
+    Start-Sleep -Seconds 2
+    exit 0
+  }
+  Write-Host "포트 $Port 를 다른 프로그램이 사용 중입니다. 해당 프로그램을 종료한 뒤 다시 실행하세요." -ForegroundColor Red
   Read-Host 'Enter 를 누르면 종료합니다'
   exit 1
 }

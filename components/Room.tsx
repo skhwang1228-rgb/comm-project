@@ -323,6 +323,21 @@ function Presenter({ adminPassword }: { adminPassword: string }) {
       setStatus("PDF 파일만 열 수 있습니다. PowerPoint에서 'PDF로 내보내기' 해주세요.");
       return;
     }
+    // 기존 작업을 지우기 전에 파일 내용을 먼저 확인한다 (보안 프로그램이 읽기를 막으면 빈 파일이 들어올 수 있음)
+    try {
+      if (file.size === 0) {
+        setStatus("파일 내용이 비어 있습니다(0바이트). 보안 프로그램이 파일 읽기를 막았을 수 있습니다.");
+        return;
+      }
+      const head = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+      if (String.fromCharCode(...head) !== "%PDF-") {
+        setStatus("PDF 형식이 아닙니다. 파일이 손상되었거나 다른 형식으로 바뀌었을 수 있습니다.");
+        return;
+      }
+    } catch {
+      setStatus("파일을 읽을 수 없습니다. 보안 프로그램이나 권한 문제일 수 있습니다.");
+      return;
+    }
     if (Object.keys(media).length && !confirm("새 PDF를 열면 연결된 영상이 모두 해제됩니다. 계속할까요?")) return;
     await kvClear().catch(() => {});
     await dropAllMedia();
