@@ -18,9 +18,3 @@ export type Message = {
   body: string;
   created_at: string;
 };
-
-export type SessionState = {
-  id: number;
-  pdf_url: string | null;
-  slide: number;
-};

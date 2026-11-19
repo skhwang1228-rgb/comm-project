@@ -22,25 +22,6 @@ export async function POST(req: Request) {
     case "login":
       return NextResponse.json({ ok: true });
 
-    // 브라우저가 Supabase Storage로 직접 업로드하도록 서명된 URL 발급
-    // (Vercel 함수는 요청 본문 4.5MB 제한이 있어 파일을 서버로 보내지 않음)
-    case "upload-url": {
-      const path = `${Date.now()}-${crypto.randomUUID()}.pdf`;
-      const { data, error } = await db.storage.from("slides").createSignedUploadUrl(path);
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      const { data: pub } = db.storage.from("slides").getPublicUrl(path);
-      return NextResponse.json({ path, token: data.token, publicUrl: pub.publicUrl });
-    }
-
-    case "set-state": {
-      const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      if (typeof body.slide === "number") update.slide = Math.max(1, Math.floor(body.slide));
-      if (typeof body.pdf_url === "string") update.pdf_url = body.pdf_url;
-      const { error } = await db.from("session_state").update(update).eq("id", 1);
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      return NextResponse.json({ ok: true });
-    }
-
     case "delete-message": {
       const { error } = await db.from("messages").delete().eq("id", body.id);
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
