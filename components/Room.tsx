@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { pickFiles } from "@/lib/pick";
 import SlideViewer from "./SlideViewer";
 import Chat from "./Chat";
 import { kvClear, kvDel, kvGet, kvSet, Meta, SavedItem } from "@/lib/store";
@@ -64,6 +65,8 @@ function Presenter({ adminPassword }: { adminPassword: string }) {
   const [hydrated, setHydrated] = useState(false);
   const [isFs, setIsFs] = useState(false);
 
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const autoFs = useRef(false);
   const mediaRef = useRef(media);
@@ -212,9 +215,17 @@ function Presenter({ adminPassword }: { adminPassword: string }) {
     setMedia((prev) => ({ ...prev, [forPage]: [...(prev[forPage] ?? []), item] }));
   }
 
-  async function addVideoFiles(e: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = "";
+  async function pickVideos() {
+    const files = await pickFiles({
+      description: "영상",
+      accept: { "video/*": [".mp4", ".webm", ".mov", ".m4v", ".ogv"] },
+      multiple: true,
+    });
+    if (files === null) videoInputRef.current?.click(); // 미지원/실패 시 기존 방식
+    else if (files.length) await addVideoFiles(files);
+  }
+
+  async function addVideoFiles(files: File[]) {
     const base = nameInput.trim();
     setNameInput("");
     for (const [idx, file] of files.entries()) {
@@ -277,10 +288,13 @@ function Presenter({ adminPassword }: { adminPassword: string }) {
     setPlayingId(null);
   }
 
-  async function openPdf(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  async function pickPdf() {
+    const files = await pickFiles({ description: "PDF", accept: { "application/pdf": [".pdf"] } });
+    if (files === null) pdfInputRef.current?.click(); // 미지원/실패 시 기존 방식
+    else if (files[0]) await openPdf(files[0]);
+  }
+
+  async function openPdf(file: File) {
     if (!/\.pdf$/i.test(file.name)) {
       setStatus("PDF 파일만 열 수 있습니다. PowerPoint에서 'PDF로 내보내기' 해주세요.");
       return;
@@ -403,10 +417,20 @@ function Presenter({ adminPassword }: { adminPassword: string }) {
           {dockOpen && (
             <div className="dock-body">
               <div className="toolbar">
-                <label className="btn">
+                <button onClick={pickPdf}>
                   PDF 열기
-                  <input type="file" accept="application/pdf" hidden onChange={openPdf} />
-                </label>
+                </button>
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) openPdf(f);
+                  }}
+                />
                 {fileName && <span className="muted">{fileName}</span>}
                 <input
                   className="grow"
@@ -432,10 +456,21 @@ function Presenter({ adminPassword }: { adminPassword: string }) {
                     maxLength={30}
                     onChange={(e) => setNameInput(e.target.value)}
                   />
-                  <label className="btn">
+                  <button onClick={pickVideos}>
                     파일 추가
-                    <input type="file" accept="video/*" multiple hidden onChange={addVideoFiles} />
-                  </label>
+                  </button>
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    hidden
+                    onChange={(e) => {
+                      const fs = Array.from(e.target.files ?? []);
+                      e.target.value = "";
+                      if (fs.length) addVideoFiles(fs);
+                    }}
+                  />
                   <input
                     className="grow"
                     placeholder="영상 URL (YouTube, Vimeo, mp4 링크)"
