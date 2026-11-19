@@ -2,6 +2,7 @@
 
 import { FormEvent, KeyboardEvent, useRef, useState } from "react";
 import Room from "@/components/Room";
+import { ADMIN_API } from "@/lib/config";
 
 export default function Admin() {
   const [pw, setPw] = useState("");
@@ -14,7 +15,7 @@ export default function Admin() {
     busy.current = true;
     setError("");
     try {
-      const res = await fetch("/api/admin", {
+      const res = await fetch(ADMIN_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "login", password: pw }),

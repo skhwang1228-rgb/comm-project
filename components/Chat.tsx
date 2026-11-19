@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { getSupabase, Message } from "@/lib/supabase";
+import { ADMIN_API } from "@/lib/config";
 import ThemeToggle from "./ThemeToggle";
 
 type Props = { adminPassword?: string; onResetAll?: () => void | Promise<void> };
@@ -106,7 +107,7 @@ export default function Chat({ adminPassword, onResetAll }: Props) {
   }
 
   async function adminCall(payload: object) {
-    await fetch("/api/admin", {
+    await fetch(ADMIN_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: adminPassword, ...payload }),
