@@ -95,7 +95,7 @@ export default function SlideViewer({ url, page, onLoaded }: Props) {
 
   return (
     <div ref={wrapRef} className="slide-wrap">
-      {!url && <p className="muted">'PDF 열기'로 슬라이드를 선택하세요.</p>}
+      {!url && <p className="muted">'PDF 열기'로 슬라이드를 선택하거나, PDF 파일을 이 화면에 끌어다 놓거나 붙여넣기(Ctrl+V) 하세요.</p>}
       {loading && <p className="muted">슬라이드 불러오는 중…</p>}
       {error && <p className="muted">{error}</p>}
       <canvas ref={canvasRef} style={{ display: url && !error ? "block" : "none" }} />

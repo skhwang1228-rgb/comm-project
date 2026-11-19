@@ -288,6 +288,30 @@ function Presenter({ adminPassword }: { adminPassword: string }) {
     setPlayingId(null);
   }
 
+  // 끌어다 놓기 / 붙여넣기로 들어온 파일 처리: PDF면 슬라이드로 열고, 영상이면 현재 슬라이드에 추가
+  async function handleFiles(files: File[]) {
+    const pdf = files.find((f) => f.type === "application/pdf" || /\.pdf$/i.test(f.name));
+    const videos = files.filter((f) => f.type.startsWith("video/"));
+    if (pdf) await openPdf(pdf);
+    else if (videos.length && (pdfUrl || embedUrl)) await addVideoFiles(videos);
+    else if (videos.length) setStatus("영상은 PDF를 먼저 연 뒤에 추가할 수 있습니다.");
+    else setStatus("PDF 또는 영상 파일만 사용할 수 있습니다.");
+  }
+  const handleFilesRef = useRef(handleFiles);
+  handleFilesRef.current = handleFiles;
+
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const files = Array.from(e.clipboardData?.files ?? []);
+      if (files.length) {
+        e.preventDefault();
+        handleFilesRef.current(files);
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
+
   async function pickPdf() {
     const files = await pickFiles({ description: "PDF", accept: { "application/pdf": [".pdf"] } });
     if (files === null) pdfInputRef.current?.click(); // 미지원/실패 시 기존 방식
@@ -356,7 +380,16 @@ function Presenter({ adminPassword }: { adminPassword: string }) {
       </nav>
 
       <section className="pane-slides">
-        <div className="stage" ref={stageRef}>
+        <div
+          className="stage"
+          ref={stageRef}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length) handleFiles(files);
+          }}
+        >
           {embedUrl ? (
             <div className="slide-wrap embed">
               <iframe src={embedUrl} allowFullScreen allow="autoplay; fullscreen" />
